@@ -12,20 +12,20 @@ DimPals supports applying palettes to subsets of clusters. These groups should b
 
 
 ## Installation
-`
+```R
 
 devtools::install_github("clay-carey/DimPals")
 
-`
+```
 
 ## Usage 
-`
+```R
 
 library(DimPals)
 
 DimPals(seurat_object)
 
-`
+```
 
 ## Using the application
 
