@@ -1,4 +1,4 @@
-dim.pals <- function(seurat_object = NULL) {
+DimPals <- function(seurat_object = NULL) {
   library(shiny)
   library(dplyr)
   library(Seurat)
