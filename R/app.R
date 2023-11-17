@@ -36,7 +36,7 @@ DimPals <- function(seurat_object = NULL) {
   server <- function(input, output, session){
     ### INITIALIZE PALETTE
     initialized_palette <- rep("grey", length(unique(seurat_object$seurat_clusters)))
-    names(initialized_palette) <- c(0:(max(as.numeric(data$seurat_clusters)) -1))
+    names(initialized_palette) <- c(0:(max(as.numeric(seurat_object$seurat_clusters)) -1))
 
     ##DEFINE REACTIVE VARIABLES
     seurat_object <- reactiveVal(seurat_object)
