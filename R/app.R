@@ -1,11 +1,10 @@
-library(shiny)
-library(dplyr)
-library(Seurat)
-library(colourpicker)  # For color picker input
-library(paletteer) # Package containing color palettes
-library(ggplot2)
-
 dim.pals <- function(seurat_object = NULL) {
+  library(shiny)
+  library(dplyr)
+  library(Seurat)
+  library(colourpicker)  # For color picker input
+  library(paletteer) # Package containing color palettes
+  library(ggplot2)
   ui <- fluidPage(
     titlePanel("dim-pals"),
     sidebarLayout(
