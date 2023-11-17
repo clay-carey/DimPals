@@ -12,15 +12,15 @@ DimPals supports applying palettes to subsets of clusters. These groups should b
 
 
 ## Installation
-`code`
+`
 devtools::install_github("clay-carey/DimPals")
-`code`
+`
 
 ## Usage 
-`code`
+`
 library(DimPals)
 DimPals(seurat_object)
-`code`
+``
 
 ## Using the application
 
