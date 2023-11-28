@@ -1,3 +1,4 @@
+![alt text](https://github.com/clay-carey/DimPals/blob/main/repo_images/badge.png)
 # DimPals
 
 DimPals is a tool for interactively creating pleasing and informative color palettes for single-cell UMAP plots generated with the Seurat package.
