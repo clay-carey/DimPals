@@ -12,6 +12,10 @@ DimPals <- function(seurat_object = NULL) {
         tags$h3("Select Metadata Column to Color By"),
         selectInput("color_by_column", "Color UMAP By", choices = NULL),
         tags$hr(),
+        tags$h3("Current Palette"),
+        plotOutput("palette_preview", height = "150px"),
+        actionButton("shuffle_palette_button", "Shuffle Colors"),
+        tags$hr(),
         tags$h3("re-color individual groups"),
         selectInput("cluster_to_color","Select Group for Custom Color", choices = NULL),
         colourInput("col", "Select Group Color", "purple"),
@@ -30,6 +34,14 @@ DimPals <- function(seurat_object = NULL) {
         tags$h3("Plot Controls"),
         actionButton("plot_button","Refresh Plot"),
         checkboxInput("show_labels", "Show Labels", value = FALSE),
+        checkboxInput("show_legend", "Show Legend", value = TRUE),
+        checkboxInput("show_axes", "Show Axes", value = FALSE),
+        tags$hr(),
+        tags$h3("Export Plot"),
+        numericInput("plot_width", "Width (inches)", value = 8, min = 2, max = 20, step = 0.5),
+        numericInput("plot_height", "Height (inches)", value = 6, min = 2, max = 20, step = 0.5),
+        numericInput("plot_dpi", "DPI", value = 300, min = 72, max = 600, step = 50),
+        downloadButton("download_plot", "Download Plot"),
         tags$hr(),
         tags$h3("Save Palette"),
         textInput("palette_var_name", "Variable Name", value = "my_palette"),
@@ -196,9 +208,21 @@ DimPals <- function(seurat_object = NULL) {
       seurat <- seurat_object()
       color_col <- input$color_by_column
       if (is.null(plotted()) && !is.null(pal) && !is.null(color_col)){
-        output$umap_plot <- renderPlot(
-          DimPlot(seurat, group.by = color_col, cols = pal) + NoAxes() + ggtitle("")
-        )
+        output$umap_plot <- renderPlot({
+          p <- DimPlot(seurat, group.by = color_col, cols = pal) + ggtitle("")
+
+          # Apply axes toggle (default is FALSE/off)
+          if (!input$show_axes) {
+            p <- p + NoAxes()
+          }
+
+          # Apply legend toggle (default is TRUE/on)
+          if (!input$show_legend) {
+            p <- p + theme(legend.position = "none")
+          }
+
+          p
+        })
       }
     })
 
@@ -208,19 +232,63 @@ DimPals <- function(seurat_object = NULL) {
       seurat <- seurat_object()
       pal <- palette()
       color_col <- input$color_by_column
-      output$umap_plot <- renderPlot(
-        if (input$show_labels) {
-          DimPlot(seurat, group.by = color_col, cols = pal, label = TRUE, label.size = 7, label.box = TRUE) + NoAxes() + ggtitle("")
-        } else {
-          DimPlot(seurat, group.by = color_col, cols = pal) + NoAxes() + ggtitle("")
+      output$umap_plot <- renderPlot({
+        # Build base plot
+        p <- DimPlot(seurat, group.by = color_col, cols = pal,
+                    label = input$show_labels,
+                    label.size = if(input$show_labels) 7 else NULL,
+                    label.box = if(input$show_labels) TRUE else FALSE) +
+          ggtitle("")
+
+        # Apply axes toggle (default is FALSE/off)
+        if (!input$show_axes) {
+          p <- p + NoAxes()
         }
-      )
+
+        # Apply legend toggle (default is TRUE/on)
+        if (!input$show_legend) {
+          p <- p + theme(legend.position = "none")
+        }
+
+        p
+      })
     })
 
     ## VECTOR TEXT OUTPUT
     output$color_list <- renderPrint({
       cat("Copy and paste this palette for use in the seurat 'cols' argument", "\n","\n")
       cat("palette <- ","c(", paste(shQuote(unlist(palette())), collapse = ", "), ")\n")
+    })
+
+    ## PALETTE PREVIEW
+    output$palette_preview <- renderPlot({
+      pal <- palette()
+      if (!is.null(pal)) {
+        n <- length(pal)
+        pal_df <- data.frame(
+          group = names(pal),
+          color = unname(pal),
+          x = 1:n,
+          y = 1
+        )
+        ggplot(pal_df, aes(x = x, y = y, fill = color)) +
+          geom_tile(color = "white", linewidth = 2) +
+          geom_text(aes(label = group), size = 3, fontface = "bold") +
+          scale_fill_identity() +
+          theme_void() +
+          theme(plot.margin = margin(5, 5, 5, 5))
+      }
+    })
+
+    ## SHUFFLE PALETTE COLORS
+    observeEvent(input$shuffle_palette_button, {
+      pal <- palette()
+      if (!is.null(pal)) {
+        # Keep the names, shuffle the colors
+        shuffled_colors <- sample(unname(pal))
+        names(shuffled_colors) <- names(pal)
+        palette(shuffled_colors)
+      }
     })
 
     ## SAVE PALETTE TO R ENVIRONMENT
@@ -249,6 +317,42 @@ DimPals <- function(seurat_object = NULL) {
         showNotification("Please provide a valid variable name.", type = "warning", duration = 3)
       }
     })
+
+    ## DOWNLOAD PLOT HANDLER
+    output$download_plot <- downloadHandler(
+      filename = function() {
+        paste0("dimplot_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".png")
+      },
+      content = function(file) {
+        seurat <- seurat_object()
+        pal <- palette()
+        color_col <- input$color_by_column
+
+        # Build the plot
+        p <- DimPlot(seurat, group.by = color_col, cols = pal,
+                    label = input$show_labels,
+                    label.size = if(input$show_labels) 7 else NULL,
+                    label.box = if(input$show_labels) TRUE else FALSE) +
+          ggtitle("")
+
+        # Apply axes
+        if (!input$show_axes) {
+          p <- p + NoAxes()
+        }
+
+        # Apply legend
+        if (!input$show_legend) {
+          p <- p + theme(legend.position = "none")
+        }
+
+        # Save the plot
+        ggsave(file, plot = p,
+               width = input$plot_width,
+               height = input$plot_height,
+               dpi = input$plot_dpi,
+               units = "in")
+      }
+    )
   }
 
   shinyApp(ui,server)
